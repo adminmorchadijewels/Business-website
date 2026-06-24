@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "PowerShell($code = \\(Get-Command code -ErrorAction SilentlyContinue\\); $cursor = \\(Get-Command cursor -ErrorAction SilentlyContinue\\); \"code: $\\($code.Source\\)\"; \"cursor: $\\($cursor.Source\\)\")",
+      "PowerShell($out = \"C:\\\\Users\\\\91958\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Business-website\\\\68188557-5052-402f-a7bb-0cec2feff100\\\\scratchpad\\\\kickbacks.vsix\"; try { Invoke-WebRequest -Uri \"https://kickbacks.ai/vsix\" -OutFile $out -MaximumRedirection 5 -ErrorAction Stop; $f = Get-Item $out; \"Downloaded: $\\($f.Length\\) bytes\"; \"Path: $out\" } catch { \"ERROR: $\\($_.Exception.Message\\)\" })",
+      "PowerShell($out = \"C:\\\\Users\\\\91958\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Business-website\\\\68188557-5052-402f-a7bb-0cec2feff100\\\\scratchpad\\\\kickbacks.vsix\"; $bytes = [System.IO.File]::ReadAllBytes\\($out\\)[0..1]; $sig = -join \\($bytes | ForEach-Object { [char]$_ }\\); \"Magic bytes: $sig\"; try { Add-Type -AssemblyName System.IO.Compression.FileSystem; $z = [System.IO.Compression.ZipFile]::OpenRead\\($out\\); $names = $z.Entries.Name; \"Has manifest: $\\([bool]\\($names -contains 'extension.vsixmanifest'\\)\\)\"; $z.Dispose\\(\\) } catch { \"ZIP read error: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(npm *)",
+      "WebFetch(domain:opennext.js.org)",
+      "PowerShell(Get-ChildItem -Force \"D:\\\\Business website\" | Select-Object Name, Mode; \"---count---\"; \\(Get-ChildItem -Force 'D:\\\\Business website' | Measure-Object\\).Count)",
+      "PowerShell(npx --yes shadcn@latest init -d -b neutral --yes 2>&1 | Select-Object -Last 25)",
+      "PowerShell(npx --yes shadcn@latest init -d --yes | Out-String)",
+      "PowerShell(npx --yes shadcn@latest add card badge --yes | Out-String)",
+      "PowerShell(git *)",
+      "PowerShell(\"branch: $\\(git branch --show-current\\)\"; \"myenv staged files: $\\(\\(git diff --cached --name-only -- myenv | Measure-Object -Line\\).Lines\\)\"; \"total staged: $\\(\\(git diff --cached --name-only | Measure-Object -Line\\).Lines\\)\")"
+    ]
+  }
+}

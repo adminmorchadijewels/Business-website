@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jewellery-storefront",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-23",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "jewellery-storefront"
+    }
+  ],
+  // Routes next/image optimization through Cloudflare Images (handled by
+  // OpenNext) instead of Next.js's default optimizer, which is not available
+  // on the Workers runtime.
+  "images": {
+    "binding": "IMAGES"
+  }
+  // R2 bucket for the ISR / incremental cache will be added here when the
+  // data layer + Cloudflare resources are provisioned in a later session.
+}

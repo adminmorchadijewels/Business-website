@@ -1,0 +1,10 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Jewellery placeholder">
+  <rect width="600" height="600" fill="#E6E8E4" />
+  <g stroke="#4A57B8" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M300 196 L356 252 L300 372 L244 252 Z" />
+    <path d="M244 252 L356 252" />
+    <path d="M300 196 L300 252" />
+    <path d="M272 224 L300 252 L328 224" />
+  </g>
+  <circle cx="300" cy="300" r="150" stroke="#4A57B8" stroke-width="2" opacity="0.18" fill="none" />
+</svg>

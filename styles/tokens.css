@@ -1,0 +1,121 @@
+/* ============================================================================
+   DAYLIGHT — DESIGN TOKENS (single source of truth)
+   ----------------------------------------------------------------------------
+   This is the ONLY file that contains raw hex / rem values for the theme.
+   Every component references a *named token* (e.g. bg-accent, text-text-primary,
+   rounded-lg, font-heading) — never a raw value.
+
+   To re-skin the entire storefront, edit the values in `:root` below.
+   The change cascades to every component because each Tailwind color utility
+   is mapped (via `@theme inline`) to the matching CSS variable here.
+
+   Two layers:
+     1. `@theme inline { … }`  — wires Tailwind utility names → CSS variables.
+                                  (the "API": bg-accent, text-text-secondary, …)
+     2. `:root { … }`          — the actual values. Edit here to re-theme.
+   ============================================================================ */
+
+@theme inline {
+  /* ---------- Typography (families come from next/font in layout.tsx) ------ */
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---------- Colour: Daylight palette (the design-system API) ------------- */
+  --color-background: var(--background);
+  --color-surface-alt: var(--surface-alt);
+  --color-surface-warm: var(--surface-warm);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-keyline: var(--keyline);
+  --color-on-accent: var(--on-accent);
+
+  /* ---------- Colour: shadcn/ui semantic tokens → mapped onto Daylight ----- */
+  /* These let every shadcn primitive (Button, Card, Badge…) inherit the theme. */
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ---------- Radius: soft, "matted gallery frame" (not fully rounded) ----- */
+  --radius-sm: var(--radius-sm-token);
+  --radius-md: var(--radius-md-token);
+  --radius-lg: var(--radius-lg-token);
+  --radius-xl: var(--radius-xl-token);
+
+  /* ---------- Spacing extras (Tailwind's default scale covers the rest) ---- */
+  --spacing-mat: var(--mat-inset); /* inset of a product image inside its mat */
+}
+
+:root {
+  /* ======================================================================
+     DAYLIGHT PALETTE — edit these seven values to re-skin the brand.
+     ====================================================================== */
+  --background: #f2f4f3;
+  --surface-alt: #e6e8e4;
+  --surface-warm: #ede7dd;
+  --accent: #4a57b8;
+  --accent-soft: #f2d06b;
+  --text-primary: #1c1f22;
+  --text-secondary: #6e747a;
+
+  /* ---- Derived / supporting colour tokens -------------------------------- */
+  --keyline: #d7dad5; /* thin 1px card keyline (Daylight separates with lines, not shadows) */
+  --on-accent: #f7f8fa; /* legible text/icon colour on top of --accent */
+  --surface-card: #fbfcfb; /* near-white card surface */
+
+  /* ---- Radius scale ------------------------------------------------------ */
+  --radius-sm-token: 0.5rem; /*  8px  */
+  --radius-md-token: 0.875rem; /* 14px  */
+  --radius-lg-token: 1.25rem; /* 20px — generous, gallery-frame feel */
+  --radius-xl-token: 1.75rem; /* 28px  */
+
+  /* ---- Spacing ----------------------------------------------------------- */
+  --mat-inset: 0.875rem; /* product image inset within its warm mat */
+
+  /* ======================================================================
+     shadcn/ui semantic tokens, expressed in terms of the Daylight palette.
+     (No raw hex below except where a distinct shade is genuinely required.)
+     ====================================================================== */
+  --foreground: var(--text-primary);
+  --card: var(--surface-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-card);
+  --popover-foreground: var(--text-primary);
+
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
+
+  --secondary: var(--surface-alt);
+  --secondary-foreground: var(--text-primary);
+
+  --muted: var(--surface-alt);
+  --muted-foreground: var(--text-secondary);
+
+  /* shadcn's "accent" = hover/active highlight. In Daylight it is the brand
+     accent, so interactive hovers tint toward the brand colour. */
+  --accent-foreground: var(--on-accent);
+
+  --destructive: #b4452f;
+  --destructive-foreground: var(--on-accent);
+
+  --border: var(--keyline);
+  --input: var(--keyline);
+  --ring: var(--accent);
+}
