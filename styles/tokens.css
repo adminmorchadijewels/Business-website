@@ -73,7 +73,14 @@
   --accent: #4a57b8;
   --accent-soft: #f2d06b;
   --text-primary: #1c1f22;
-  --text-secondary: #6e747a;
+  /* Darkened from #6e747a (which failed WCAG AA — only ~3.8:1 on --surface-alt)
+     to clear 4.5:1 against every surface with margin to spare, for a slightly
+     bolder, more present secondary tone. Ratios: --background 6.83:1,
+     --surface-alt 6.12:1, --surface-warm 6.14:1, --surface-card 7.34:1. This
+     token is used widely (captions, prices, placeholders, footer, payment
+     chips), so darkening it here re-skins all of them with no component edits —
+     the whole point of the token architecture. */
+  --text-secondary: #4f555b;
 
   /* ---- Derived / supporting colour tokens -------------------------------- */
   --keyline: #d7dad5; /* thin 1px card keyline (Daylight separates with lines, not shadows) */

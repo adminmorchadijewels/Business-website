@@ -35,6 +35,17 @@ shadcn primitives are themed through semantic aliases (`primary` = `accent`,
 `secondary`/`muted` = `surface-alt`, `border` = `keyline`, …), so a shadcn
 `<Button>` is on-brand automatically.
 
+### The one allowed arbitrary-value utility: letter-spacing (`tracking-[…]`)
+
+`tracking-[0.18em]`-style letter-spacing on uppercase eyebrow/label text is the
+**single intentional exception** to the "no arbitrary `[...]` values in
+components" rule (see `CLAUDE.md`). Letter-spacing is a typographic
+micro-property, not a themeable colour/spacing/radius token, and it doesn't
+change on a re-skin — so there is no `--tracking-*` token scale by design.
+Constraints when using it: always `em` units (scales with font-size) and only on
+uppercase label/eyebrow text. Everything else (raw hex, raw px spacing,
+font-family strings) stays forbidden — use named tokens.
+
 ## Component patterns
 
 - Components are **function components**, named exports, typed props extending
@@ -49,6 +60,46 @@ shadcn primitives are themed through semantic aliases (`primary` = `accent`,
 - Separation = `border border-keyline`, **not** shadows.
 - Anything interactive that hooks into Base UI (e.g. `useRender`) is a client
   component — pages that compose many of them can opt into `"use client"`.
+
+### Buttons vs. links (Base UI `nativeButton`)
+
+`<Button>` is built on Base UI's button, which renders a **native `<button>`**.
+Use it for **in-page actions** (form submit, add-to-cart, open a dialog) — these
+stay real `<button>` elements:
+
+```tsx
+<Button type="submit">Subscribe</Button>
+```
+
+For anything that **navigates** to another route/section, keep the Button's look
+but give it correct link semantics by rendering it as a Next.js `<Link>` via the
+Base UI `render` prop:
+
+```tsx
+<Button render={<Link href="/shop" />}>Shop the collection</Button>
+```
+
+When `render` swaps the element for a non-button (a `<Link>` → `<a>`), Base UI
+needs `nativeButton={false}`, or it logs *"A component that acts as a button
+expected a native `<button>`…"*. **Our `Button` already defaults `nativeButton`
+to `false` whenever a `render` prop is passed** (see `components/ui/button.tsx`),
+so `render={<Link …/>}` just works — you do **not** need to set `nativeButton`
+yourself. (Override it only in the rare case of rendering a real `<button>` via
+`render`.) The result is an `<a role="button">` carrying all the button classes,
+so it's visually identical and keyboard/SEO-correct.
+
+Equivalent alternative (no Button component): style a `<Link>` directly with the
+exported `buttonVariants` — handy when you don't want Base UI button machinery at
+all:
+
+```tsx
+<Link href="/shop" className={cn(buttonVariants({ variant: "outline" }))}>
+  Shop the collection
+</Link>
+```
+
+Rule of thumb: **action → `<Button>`; navigation → `<Button render={<Link/>}>`
+(or a `buttonVariants`-styled `<Link>`).**
 
 ## File naming
 

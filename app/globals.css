@@ -8,9 +8,84 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer utilities {
+  /* Continuous horizontal marquee. The track renders its content twice; moving
+     it -50% and looping yields a seamless scroll. Duration is tunable per-use
+     via the --marquee-duration custom property (a timing value, not a themeable
+     colour/spacing token, so it stays out of styles/tokens.css). */
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  .animate-marquee {
+    animation: marquee var(--marquee-duration, 30s) linear infinite;
+  }
+  /* Pause the scroll on hover so users can read / interact. */
+  .marquee-pause:hover .animate-marquee {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-marquee {
+      animation: none;
+    }
+  }
+
+  /* Hide the native scrollbar on horizontal carousels (cross-browser) while
+     keeping the element scrollable. Used by the DragScroll component so swipe /
+     drag rows read as free-flowing with no visible scrollbar UI. */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE / old Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome / Safari / WebKit */
+  }
+
+  /* Section scroll-in reveal (see components/ui/reveal.tsx). The element starts
+     faded + nudged down; adding `.reveal-shown` (once it enters the viewport)
+     settles it. These are animation timing values, not themeable
+     colour/spacing tokens, so they live here rather than in styles/tokens.css —
+     same rationale as the marquee above. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 0.5s ease-out,
+      transform 0.5s ease-out;
+    will-change: opacity, transform;
+  }
+  .reveal-shown {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  /* Smooth, eased scrolling for in-page anchor navigation (e.g. nav/CTA links
+     that jump to a section on the same page). scroll-padding-top keeps the
+     target clear of the sticky header. Disabled under prefers-reduced-motion. */
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
   body {
     @apply bg-background text-text-primary font-body antialiased;
