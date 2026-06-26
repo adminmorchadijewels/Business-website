@@ -1,4 +1,4 @@
-import type { Product, ProductVariant } from "@/types/product";
+import type { GalleryMedia, Product, ProductVariant } from "@/types/product";
 import { categoryImageSet } from "@/mock-data/images";
 
 /**
@@ -87,6 +87,9 @@ type RawProduct = Omit<
   Product,
   | "imageSrc"
   | "images"
+  | "media"
+  | "dimensions"
+  | "care"
   | "longDescription"
   | "popularity"
   | "popularityScore"
@@ -117,6 +120,7 @@ const rawProducts: RawProduct[] = [
     tag: "BESTSELLER",
     isBestseller: true,
     inStock: true,
+    availableAddOnIds: ["p_101", "p_102", "p_103"],
   },
   {
     // Colour-only variants, per-variant pricing (range 849 – 949).
@@ -233,6 +237,7 @@ const rawProducts: RawProduct[] = [
     material: "18k Gold Plated",
     colour: "gold-tone",
     inStock: true,
+    availableAddOnIds: ["p_102", "p_103"],
   },
   {
     id: "p_009",
@@ -344,6 +349,7 @@ const rawProducts: RawProduct[] = [
     isCustomisable: true,
     depositInPaise: 70000,
     inStock: true,
+    availableAddOnIds: ["p_101", "p_102", "p_103"],
   },
 
   // ---------------------------------------------------------------- Pendants
@@ -632,6 +638,7 @@ const rawProducts: RawProduct[] = [
     colour: "gold-tone",
     tag: "BESTSELLER",
     isBestseller: true,
+    availableAddOnIds: ["p_101", "p_102"],
     optionGroups: [
       {
         axis: "stone",
@@ -760,6 +767,53 @@ const rawProducts: RawProduct[] = [
       { id: "p_037-8", options: { size: "8" }, priceInPaise: 159900, inStock: true },
     ],
   },
+
+  // ------------------------------------------------------- Add-on-only products
+  // Gifting extras attached to a main product via `availableAddOnIds`. Flagged
+  // `isAddOnOnly` so they NEVER appear in the Shop grid, category pages or
+  // search — only in the PDP add-on selector. Single-SKU (no variants). The
+  // `category` is only used to source a placeholder image; these are gift items,
+  // not jewellery, so the category is otherwise irrelevant (they're filtered out
+  // of every browse surface). Images are clearly-temporary placeholders.
+  {
+    id: "p_101",
+    slug: "gift-hamper",
+    name: "Gift Hamper",
+    description: "A curated gift hamper to make your order feel like an occasion.",
+    priceInPaise: 79900,
+    currency: "INR",
+    category: "bangles",
+    material: "Assorted gifting",
+    colour: "gold-tone",
+    isAddOnOnly: true,
+    inStock: true,
+  },
+  {
+    id: "p_102",
+    slug: "premium-gift-box",
+    name: "Premium Gift Box",
+    description: "A keepsake hard box with ribbon and a hand-written note card.",
+    priceInPaise: 29900,
+    currency: "INR",
+    category: "bangles",
+    material: "Rigid board, satin ribbon",
+    colour: "gold-tone",
+    isAddOnOnly: true,
+    inStock: true,
+  },
+  {
+    id: "p_103",
+    slug: "scented-candle",
+    name: "Scented Soy Candle",
+    description: "A small hand-poured soy candle to round out the gift.",
+    priceInPaise: 39900,
+    currency: "INR",
+    category: "necklaces",
+    material: "Soy wax",
+    colour: "silver-tone",
+    isAddOnOnly: true,
+    inStock: true,
+  },
 ];
 
 // Deterministic mock sort signals (no analytics yet). NEW items get recent
@@ -767,6 +821,38 @@ const rawProducts: RawProduct[] = [
 // large `popularity` boost so "Bestselling" surfaces them first.
 const CATALOGUE_EPOCH = Date.UTC(2025, 0, 1);
 const DAY_MS = 86_400_000;
+
+/**
+ * PLACEHOLDER sample videos for the mixed-media gallery — small, long-lived
+ * public sample clips (w3schools' Big Buck Bunny + Google's gtv-videos bucket),
+ * clearly NOT final; swapped for real product video (R2 / Cloudflare Stream)
+ * later. Mapped per product id and spread across categories so several PDPs
+ * exercise the gallery's `<video>` branch. Each mapped product gets its clip
+ * mixed into the gallery at position 2 (poster = the first image, so the card
+ * image stays an image).
+ */
+const GTV = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample";
+const VIDEO_BY_PRODUCT: Record<string, string> = {
+  p_001: "https://www.w3schools.com/html/mov_bbb.mp4", // Lumen Drop Earrings
+  p_009: `${GTV}/ForBiggerJoyrides.mp4`, // Aurelia Layered Chain (necklaces)
+  p_016: `${GTV}/ForBiggerBlazes.mp4`, // Serra Cuff Bangle (bangles, variants)
+  p_021: `${GTV}/ForBiggerEscapes.mp4`, // Aurora Solitaire Ring (rings, variants)
+  p_033: `${GTV}/ForBiggerMeltdowns.mp4`, // Étincelle Tennis Bracelet (bracelets)
+};
+
+/** PLACEHOLDER physical dimensions per category (until real spec data lands). */
+const DIMENSIONS_BY_CATEGORY: Record<Product["category"], string> = {
+  earrings: "Drop length approx. 32 mm · width approx. 9 mm.",
+  necklaces: "Chain length approx. 42 cm with a 5 cm extender · pendant approx. 14 mm.",
+  pendants: "Pendant approx. 16 mm · chain length approx. 45 cm.",
+  rings: "Band width approx. 2 mm · available in sizes 5–8.",
+  bangles: "Inner diameter approx. 60 mm · band width approx. 6 mm.",
+  bracelets: "Length approx. 18 cm · width approx. 5 mm.",
+};
+
+/** PLACEHOLDER care copy shared across the catalogue (until final copy lands). */
+const CARE_INSTRUCTIONS =
+  "Keep away from perfume, lotion and harsh chemicals. Wipe gently with the soft cloth provided and store in its pouch when not worn. Avoid prolonged contact with water to preserve the finish.";
 
 /**
  * Derive each product's gallery, listing price/stock (from variants when
@@ -789,6 +875,22 @@ export const products: Product[] = rawProducts.map((p, i) => {
     ? p.variants.some((v) => v.inStock)
     : p.inStock ?? true;
 
+  // Mixed-media gallery: every image becomes an image item; for products mapped
+  // in VIDEO_BY_PRODUCT a video is mixed in at position 2 (poster = first image,
+  // so the card image — images[0] — stays an image).
+  const media: GalleryMedia[] = images.map((src) => ({
+    type: "image" as const,
+    src,
+  }));
+  const videoSrc = VIDEO_BY_PRODUCT[p.id];
+  if (videoSrc) {
+    media.splice(1, 0, {
+      type: "video",
+      src: videoSrc,
+      poster: images[0],
+    });
+  }
+
   return {
     ...p,
     priceInPaise,
@@ -796,6 +898,9 @@ export const products: Product[] = rawProducts.map((p, i) => {
     inStock,
     imageSrc: images[0],
     images,
+    media,
+    dimensions: DIMENSIONS_BY_CATEGORY[p.category],
+    care: CARE_INSTRUCTIONS,
     // Mock long-form copy — always rendered (SEO); CSS truncates it on the PDP.
     longDescription: `${p.description} Crafted in ${p.material.toLowerCase()}, the ${p.name} is made for everyday wear — light enough to forget you have it on, yet finished to feel anything but everyday. Each piece carries a protective, anti-tarnish finish and is designed to be lived in: showers, workouts and the in-between moments of real life. It arrives in signature [BrandName] packaging, ready to gift — to someone else, or to yourself. Style it back with your existing stack or let it stand alone; either way it's made to move with you, season after season.`,
     createdAt: new Date(
@@ -816,15 +921,23 @@ export const products: Product[] = rawProducts.map((p, i) => {
   };
 });
 
-/** Products flagged for the "New Arrivals" rail. */
-export const newArrivals = products.filter((p) => p.isNew);
+/**
+ * Browsable catalogue — everything EXCEPT add-on-only products. This is the list
+ * the Shop grid, category pages and search operate on, so add-on-only gifting
+ * items never surface there. Direct lookups (`productBySlug`, `addOnsFor`) still
+ * use the full `products` array. See decisions.md.
+ */
+export const shopProducts = products.filter((p) => !p.isAddOnOnly);
+
+/** Products flagged for the "New Arrivals" rail (add-on-only items excluded). */
+export const newArrivals = shopProducts.filter((p) => p.isNew);
 
 /** Products flagged for the "Bestsellers" rail (disjoint from New Arrivals). */
-export const bestsellers = products.filter((p) => p.isBestseller);
+export const bestsellers = shopProducts.filter((p) => p.isBestseller);
 
 /** Look up products in a single category (used by /shop/[category]). */
 export function productsByCategory(category: Product["category"]): Product[] {
-  return products.filter((p) => p.category === category);
+  return shopProducts.filter((p) => p.category === category);
 }
 
 /** Look up a single product by its slug (used by /products/[slug]). */
@@ -832,9 +945,22 @@ export function productBySlug(slug: string): Product | undefined {
   return products.find((p) => p.slug === slug);
 }
 
-/** Related products: same category, excluding the given product. */
+/** Related products: same category, excluding the given product and add-ons. */
 export function relatedProducts(product: Product, limit = 8): Product[] {
-  return products
+  return shopProducts
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, limit);
+}
+
+/**
+ * Resolve a product's `availableAddOnIds` to the actual add-on products, in
+ * declared order. Defensively keeps only ids that exist AND are flagged
+ * `isAddOnOnly`, so a stray/typo'd id can never pull a normal product into the
+ * add-on selector.
+ */
+export function addOnsFor(product: Product): Product[] {
+  if (!product.availableAddOnIds?.length) return [];
+  return product.availableAddOnIds
+    .map((id) => products.find((p) => p.id === id))
+    .filter((p): p is Product => !!p && !!p.isAddOnOnly);
 }

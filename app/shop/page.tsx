@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { ShopBrowser } from "@/components/shop/shop-browser";
 import { ShopSkeleton } from "@/components/shop/shop-skeleton";
-import { products } from "@/mock-data/products";
+import { shopProducts } from "@/mock-data/products";
 
 export const metadata: Metadata = {
   // Brand name TBD — replace [BrandName] once decided.
@@ -33,7 +33,7 @@ export default function ShopPage() {
         </SectionHeading>
       </div>
       <Suspense fallback={<ShopSkeleton />}>
-        <ShopBrowser products={products} />
+        <ShopBrowser products={shopProducts} />
       </Suspense>
     </main>
   );

@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check, Info, Minus, Plus } from "lucide-react";
+import { Check, Gift, Info, Minus, Plus } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { formatPriceFromPaise } from "@/lib/format";
 import { useCart } from "@/components/cart/cart-context";
 import { lineKey } from "@/lib/cart";
@@ -24,6 +25,8 @@ import { trustClaims } from "@/mock-data/home";
 
 export interface ProductBuyBoxProps {
   product: Product;
+  /** Optional gift add-ons this product offers (resolved from availableAddOnIds). */
+  addOns?: Product[];
 }
 
 // PLACEHOLDER trust claims (same caveat as the Home page trust strip): the
@@ -38,7 +41,7 @@ const PDP_TRUST = trustClaims.slice(0, 3);
  * chosen), and the trust-badges row. Owns the selection state and all price /
  * availability resolution (logic in lib/product.ts).
  */
-export function ProductBuyBox({ product }: ProductBuyBoxProps) {
+export function ProductBuyBox({ product, addOns = [] }: ProductBuyBoxProps) {
   const cart = useCart();
 
   // Pre-select any single-option axes so their SKU resolves automatically.
@@ -75,6 +78,33 @@ export function ProductBuyBox({ product }: ProductBuyBoxProps) {
 
   function handleSelect(axis: VariantAxis, value: string) {
     setSelected((prev) => applySelection(product, prev, axis, value));
+  }
+
+  // Selected gift add-ons (by product id). Each is added as its OWN independent
+  // single-SKU cart line alongside the main product in one Add-to-Cart action.
+  const [selectedAddOns, setSelectedAddOns] = React.useState<Set<string>>(
+    () => new Set(),
+  );
+  function toggleAddOn(id: string) {
+    setSelectedAddOns((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  // Add each selected add-on as its own line, then clear the selection.
+  function addSelectedAddOns() {
+    if (selectedAddOns.size === 0) return;
+    for (const addOn of addOns) {
+      if (selectedAddOns.has(addOn.id)) cart.add(addOn, {}, 1);
+    }
+    setSelectedAddOns(new Set());
+  }
+  // Main Add-to-Cart: add the chosen variant AND every selected add-on at once.
+  function handleAddToCart() {
+    cart.add(product, selected, 1);
+    addSelectedAddOns();
   }
 
   const ctaLabel = soldOut
@@ -150,6 +180,70 @@ export function ProductBuyBox({ product }: ProductBuyBoxProps) {
         </div>
       ) : null}
 
+      {/* 5.5 — Gift add-ons. Optional extras (gift hamper, box, candle…), each a
+          toggle-able card. Selecting one or more then adding to cart drops each
+          in as its own independent line. Hidden when the product is sold out. */}
+      {addOns.length > 0 && !soldOut ? (
+        <fieldset className="mt-6 rounded-md border border-keyline p-4">
+          <legend className="flex items-center gap-1.5 px-1 font-body text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary">
+            <Gift className="size-3.5 text-accent" aria-hidden />
+            Make it a gift
+          </legend>
+          <div className="mt-2 flex flex-col gap-2">
+            {addOns.map((addOn) => {
+              const checked = selectedAddOns.has(addOn.id);
+              return (
+                <label
+                  key={addOn.id}
+                  className={cn(
+                    "flex cursor-pointer items-center gap-3 rounded-sm border p-2 transition-colors",
+                    checked
+                      ? "border-accent bg-surface-warm"
+                      : "border-keyline hover:border-accent/50",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleAddOn(addOn.id)}
+                    className="peer sr-only"
+                  />
+                  <span
+                    className={cn(
+                      "grid size-4 shrink-0 place-items-center rounded-sm border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50",
+                      checked
+                        ? "border-accent bg-accent text-on-accent"
+                        : "border-keyline bg-card",
+                    )}
+                  >
+                    {checked ? <Check className="size-3" /> : null}
+                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={addOn.imageSrc}
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="size-11 shrink-0 rounded-sm object-cover"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-body text-sm font-medium text-text-primary">
+                      {addOn.name}
+                    </span>
+                    <span className="block font-body text-xs text-text-secondary">
+                      {addOn.description}
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-body text-sm font-semibold text-text-primary">
+                    {formatPriceFromPaise(addOn.priceInPaise)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      ) : null}
+
       {/* 6 — Add to Cart → live quantity stepper once this variant is in the
           cart. The stepper writes straight to the cart context (no separate
           local counter), so the header badge and Cart page stay in lockstep;
@@ -198,12 +292,27 @@ export function ProductBuyBox({ product }: ProductBuyBoxProps) {
             size="lg"
             className="w-full rounded-sm"
             disabled={!addable}
-            onClick={() => cart.add(product, selected, 1)}
+            onClick={handleAddToCart}
             nativeButton
           >
             {ctaLabel}
           </Button>
         )}
+        {/* The main item is already in the cart (stepper shown) but the shopper
+            has since ticked gift add-ons — give them their own add action so the
+            selection isn't stranded with no Add-to-Cart button. */}
+        {qtyInCart > 0 && selectedAddOns.size > 0 ? (
+          <Button
+            variant="outline"
+            size="lg"
+            className="mt-3 w-full rounded-sm"
+            onClick={addSelectedAddOns}
+            nativeButton
+          >
+            Add {selectedAddOns.size} gift{" "}
+            {selectedAddOns.size === 1 ? "extra" : "extras"} to cart
+          </Button>
+        ) : null}
         {!soldOut && !addable && remainingLabels.length > 0 ? (
           <p className="mt-2 text-center font-body text-xs text-text-secondary">
             Select a {remainingLabels.join(" and ")} to continue.

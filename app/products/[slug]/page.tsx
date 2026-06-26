@@ -4,23 +4,32 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
 import { formatPriceFromPaise } from "@/lib/format";
+import { firstVideo } from "@/lib/product";
 import { CATEGORY_FACET } from "@/lib/shop";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { ProductCard } from "@/components/ui/product-card";
 import { Reveal } from "@/components/ui/reveal";
 import { DragScroll } from "@/components/ui/drag-scroll";
-import { ExpandableText } from "@/components/ui/expandable-text";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionPanel,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductBuyBox } from "@/components/product/product-buy-box";
 import {
+  addOnsFor,
   productBySlug,
   products,
   relatedProducts,
 } from "@/mock-data/products";
 
-/** Prerender a page per product. */
+/** Prerender a page per product. Add-on-only products are excluded — they're
+ *  reachable only through a main product's add-on selector, not as standalone
+ *  catalogue pages. */
 export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+  return products.filter((p) => !p.isAddOnOnly).map((p) => ({ slug: p.slug }));
 }
 
 function categoryLabel(category: string): string {
@@ -45,8 +54,11 @@ export async function generateMetadata({
 /**
  * /products/[slug] — the product detail page. Section order is locked:
  * breadcrumb → gallery → title/price → variant selectors → customisation note →
- * add to cart → trust badges → long description → related products. The full
- * description is always in the DOM (SEO); only its display is CSS-truncated.
+ * gift add-ons → add to cart → trust badges → description accordions → related
+ * products. The description block is three independently-collapsible accordions
+ * (Product Description / Product Details / Return & Exchange); every panel keeps
+ * its full content in the DOM via `hiddenUntilFound` (SEO), so collapsing only
+ * hides it visually.
  */
 export default async function ProductPage({
   params,
@@ -88,16 +100,67 @@ export default async function ProductPage({
 
         {/* 2 — Gallery + 3–7 buy box */}
         <div className="mt-6 lg:grid lg:grid-cols-2 lg:gap-12">
-          <ProductGallery images={product.images} alt={product.name} />
-          <ProductBuyBox product={product} />
+          <ProductGallery media={product.media} alt={product.name} />
+          <ProductBuyBox product={product} addOns={addOnsFor(product)} />
         </div>
 
-        {/* 8 — Long description (full text always rendered; CSS-truncated) */}
-        <Reveal as="section" className="mt-12 max-w-2xl border-t border-keyline pt-8">
-          <h2 className="font-heading text-lg font-semibold text-text-primary">
-            Details
-          </h2>
-          <ExpandableText text={product.longDescription} className="mt-3" lines={4} />
+        {/* 8 — Description split into three accordions. Every panel uses
+            `hiddenUntilFound` so its full content stays in the rendered HTML
+            (SEO + find-in-page) even while collapsed — only the visual display is
+            hidden, never the DOM content. "Product Description" opens by default. */}
+        <Reveal as="section" className="mt-12 max-w-2xl border-t border-keyline pt-2">
+          <h2 className="sr-only">Product information</h2>
+          <Accordion multiple defaultValue={["description"]} className="flex flex-col">
+            <AccordionItem value="description">
+              <AccordionTrigger className="font-heading text-base font-semibold text-text-primary">
+                Product Description
+              </AccordionTrigger>
+              <AccordionPanel hiddenUntilFound>
+                <p className="font-body text-sm leading-relaxed text-text-secondary">
+                  {product.longDescription}
+                </p>
+              </AccordionPanel>
+            </AccordionItem>
+
+            <AccordionItem value="details">
+              <AccordionTrigger className="font-heading text-base font-semibold text-text-primary">
+                Product Details
+              </AccordionTrigger>
+              <AccordionPanel hiddenUntilFound>
+                <dl className="flex flex-col gap-3 font-body text-sm">
+                  <div>
+                    <dt className="font-medium text-text-primary">Material</dt>
+                    <dd className="mt-0.5 text-text-secondary">{product.material}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-text-primary">Dimensions</dt>
+                    <dd className="mt-0.5 text-text-secondary">{product.dimensions}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-text-primary">Care</dt>
+                    <dd className="mt-0.5 text-text-secondary">{product.care}</dd>
+                  </div>
+                </dl>
+              </AccordionPanel>
+            </AccordionItem>
+
+            <AccordionItem value="returns">
+              <AccordionTrigger className="font-heading text-base font-semibold text-text-primary">
+                Return &amp; Exchange
+              </AccordionTrigger>
+              <AccordionPanel hiddenUntilFound>
+                <p className="font-body text-sm leading-relaxed text-text-secondary">
+                  Returns accepted within 7 days of delivery for unused items in
+                  their original packaging. Made-to-order and customised pieces
+                  are non-returnable.
+                </p>
+                <p className="mt-2 font-body text-xs italic text-text-secondary">
+                  Placeholder policy — final return &amp; exchange terms are
+                  pending business confirmation.
+                </p>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
         </Reveal>
 
         {/* 9 — Related products (same category; drag/swipe, no scrollbar) */}
@@ -118,6 +181,7 @@ export default async function ProductPage({
                       : undefined
                   }
                   imageSrc={p.imageSrc}
+                  videoSrc={firstVideo(p)?.src}
                   tag={p.tag}
                   href={`/products/${p.slug}`}
                   className="w-44 shrink-0 snap-start sm:w-52"

@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { WhatsAppButton } from "@/components/layout/whatsapp-button";
 import { CartProvider } from "@/components/cart/cart-context";
 import { CheckoutProvider } from "@/components/checkout/checkout-context";
 import { OrdersProvider } from "@/components/orders/orders-context";
@@ -48,6 +49,7 @@ export default function RootLayout({
                 <SiteHeader />
                 {children}
                 <SiteFooter />
+                <WhatsAppButton />
               </OrdersProvider>
             </CheckoutProvider>
           </CartProvider>

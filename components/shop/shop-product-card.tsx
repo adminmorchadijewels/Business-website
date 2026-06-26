@@ -12,10 +12,12 @@ import {
   type Selection,
   applySelection,
   canAddToCart,
+  firstVideo,
   isOptionAvailable,
   resolvePrice,
 } from "@/lib/product";
 import { Badge } from "@/components/ui/badge";
+import { CardVideo } from "@/components/ui/card-video";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/cart-context";
 
@@ -87,10 +89,16 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
   }, [product.saleEndsAt]);
   const sale = now == null ? null : resolveSale(product, now);
 
-  // ----- Hover-to-cycle images (pointer devices only) -----
+  // ----- Card visual: video (autoplayed on scroll-in) or hover-cycled images -----
+  // A product with a gallery video uses the VIDEO as its primary card visual
+  // (muted/looped autoplay via CardVideo); the still-image hover-cycle is reserved
+  // for video-less products so the two motion behaviours never compete on one card.
+  const video = firstVideo(product);
+
+  // ----- Hover-to-cycle images (pointer devices only; video-less products) -----
   const [imgIndex, setImgIndex] = React.useState(0);
   const cycleRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
-  const canCycle = product.images.length > 1;
+  const canCycle = !video && product.images.length > 1;
 
   const stopCycle = React.useCallback(() => {
     if (cycleRef.current) {
@@ -164,14 +172,23 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
           </Badge>
         ) : null}
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={product.images[imgIndex] ?? product.imageSrc}
-          alt={product.name}
-          width={600}
-          height={600}
-          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
-        />
+        {video ? (
+          <CardVideo
+            src={video.src}
+            poster={video.poster ?? product.imageSrc}
+            alt={product.name}
+            className="transition-transform duration-300 ease-out group-hover:scale-105"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={product.images[imgIndex] ?? product.imageSrc}
+            alt={product.name}
+            width={600}
+            height={600}
+            className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+          />
+        )}
       </Link>
 
       {/* Caption: name + price (with live sale pricing when active). */}

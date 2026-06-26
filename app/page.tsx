@@ -3,6 +3,7 @@ import { ArrowRight, Camera, Play, Star } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { formatPriceFromPaise } from "@/lib/format";
+import { firstVideo } from "@/lib/product";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/ui/product-card";
@@ -53,6 +54,7 @@ function ProductRail({ products }: { products: Product[] }) {
               : undefined
           }
           imageSrc={p.imageSrc}
+          videoSrc={firstVideo(p)?.src}
           tag={p.tag}
           href={`/products/${p.slug}`}
           // Beyond the first 4, stay hidden on mobile but rejoin the tablet/desktop row.

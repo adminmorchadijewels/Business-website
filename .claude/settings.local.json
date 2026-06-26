@@ -94,7 +94,12 @@
       "Bash(node *)",
       "Bash(echo \"=== TSC EXIT: $? ===\")",
       "Bash(echo \"=== ESLint exit: $? ===\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(git check-ignore *)",
+      "Bash(git push *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 8 https://www.w3schools.com/html/mov_bbb.mp4)",
+      "Bash(grep -nE '#[0-9a-fA-F]{3,6}|\\\\[[0-9]+px\\\\]|\\\\[#' components/ui/card-video.tsx components/ui/product-card.tsx components/shop/shop-product-card.tsx components/product/product-gallery.tsx lib/product.ts app/page.tsx app/products/\\\\[slug\\\\]/page.tsx)"
     ]
   }
 }

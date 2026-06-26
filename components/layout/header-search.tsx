@@ -6,7 +6,7 @@ import { Search, X } from "lucide-react";
 
 import { formatPriceFromPaise } from "@/lib/format";
 import { CATEGORY_FACET } from "@/lib/shop";
-import { products } from "@/mock-data/products";
+import { shopProducts } from "@/mock-data/products";
 
 /** Max results shown in the dropdown (the rest are reachable via the Shop page). */
 const MAX_RESULTS = 8;
@@ -31,7 +31,7 @@ export function HeaderSearch() {
   const results = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return products
+    return shopProducts
       .filter((p) => p.name.toLowerCase().includes(q))
       .slice(0, MAX_RESULTS);
   }, [query]);

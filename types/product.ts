@@ -33,6 +33,23 @@ export type ColourTone = "gold-tone" | "silver-tone" | "rose-gold";
  */
 export type VariantAxis = "colour" | "stone" | "size";
 
+/**
+ * GALLERY MEDIA. A product's gallery is a mixed list of images and videos. Each
+ * item declares its `type` so the gallery viewer knows whether to render an
+ * `<img>` or a `<video>`. `poster` is the still frame shown for a video before
+ * playback (and used as its thumbnail). The card image (`imageSrc`) and the
+ * `images` array stay image-only; `media` is the richer gallery the PDP renders.
+ */
+export type GalleryMediaType = "image" | "video";
+
+export interface GalleryMedia {
+  type: GalleryMediaType;
+  /** Image URL, or video file URL when `type === "video"`. */
+  src: string;
+  /** Poster/thumbnail image for a video (required in practice for videos). */
+  poster?: string;
+}
+
 export interface VariantOption {
   /** Stable key used in selection state / variant matching, e.g. "gold", "6". */
   value: string;
@@ -88,8 +105,22 @@ export interface Product {
   colour: ColourTone;
   /** First gallery image (used by cards). */
   imageSrc: string;
-  /** Full gallery (3–4 images) shown on the Product page. */
+  /** Full image gallery (3–4 images) — image-only; used by cards/fallbacks. */
   images: string[];
+  /**
+   * Mixed-media gallery (images + videos) rendered by the PDP gallery viewer.
+   * Derived from `images` (each becomes an image item); a few mock products mix
+   * in a video to exercise the `<video>` branch. See mock-data/products.ts.
+   */
+  media: GalleryMedia[];
+  /**
+   * Physical specs shown in the "Product Details" PDP accordion (distinct from
+   * the narrative `longDescription`). PLACEHOLDER mock content — derived
+   * per-category until real spec data lands. See decisions.md.
+   */
+  dimensions: string;
+  /** Care instructions shown in the "Product Details" accordion (placeholder). */
+  care: string;
   /**
    * Mock sort signals (no real analytics/CMS yet). `popularity` drives the
    * "Bestselling" sort (higher = more popular); `createdAt` (ISO date) drives
@@ -138,6 +169,18 @@ export interface Product {
   isCustomisable?: boolean;
   /** Per-product deposit (paise) to confirm a customisable/made-to-order item. */
   depositInPaise?: number;
+  /**
+   * ADD-ON-ONLY product (gift hamper, gift box, card, …). When true the product
+   * is EXCLUDED from all browsing surfaces — the Shop grid, category pages and
+   * search — and is only ever reachable through the add-on selector on a main
+   * product's PDP. Single-SKU (no variants). See decisions.md.
+   */
+  isAddOnOnly?: boolean;
+  /**
+   * Ids of add-on products (each `isAddOnOnly`) a "main" product offers as
+   * optional extras on its PDP. Resolved to products via `addOnsFor()`.
+   */
+  availableAddOnIds?: string[];
   /** True when at least one variant (or the single SKU) is available. */
   inStock: boolean;
 }

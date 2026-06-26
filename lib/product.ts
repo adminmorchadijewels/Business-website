@@ -1,4 +1,9 @@
-import type { Product, ProductVariant, VariantAxis } from "@/types/product";
+import type {
+  GalleryMedia,
+  Product,
+  ProductVariant,
+  VariantAxis,
+} from "@/types/product";
 
 /**
  * Product variant logic — pure helpers for the Product page. Resolves price
@@ -13,6 +18,16 @@ export type Selection = Partial<Record<VariantAxis, string>>;
 export interface PriceRange {
   min: number;
   max: number;
+}
+
+/**
+ * The product's first gallery video, if it has one. This is the card's primary
+ * motion visual (autoplayed muted on scroll-into-view); products without a video
+ * keep the still-image card (with hover-cycling on the Shop grid). See
+ * components/ui/card-video.tsx.
+ */
+export function firstVideo(p: Product): GalleryMedia | undefined {
+  return p.media.find((m) => m.type === "video");
 }
 
 /** The axes a product offers selectors for, in declared order. */

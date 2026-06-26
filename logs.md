@@ -919,3 +919,99 @@ shared cart/checkout money logic stays untouched (see decisions.md).
   hex/px in edited files (tokens only; swatch `backgroundColor` is product data,
   per decisions.md). Fixed a pre-existing broken state in `shop-product-card`
   (undefined `VariantSelector` import + `hasVariants` reference) along the way.
+
+## 2026-06-26 — Session: PDP description accordions, WhatsApp FAB, gallery video, gift add-ons
+
+Product-page feature round + one global feature. Still mock-data only; no backend.
+
+- **Description → three accordions (replaces single "Details" + See-more)** — the
+  PDP's lone CSS-truncated `longDescription` block is now three independently
+  collapsible **shadcn Accordion** sections (same Base UI primitive as the Shop
+  filters): **Product Description** (narrative `longDescription`), **Product
+  Details** (`material` + new derived `dimensions` + `care`), and **Return &
+  Exchange** (clearly-marked placeholder policy text — 7-day, original packaging,
+  made-to-order excluded). Position unchanged (still below trust badges). Every
+  panel uses Base UI's `hiddenUntilFound`, so **all three sections' full text
+  stays in the prerendered HTML even when collapsed** — verified by grepping the
+  static `.html` (return/care/dimensions copy all present; collapsed panels carry
+  `hidden`, the open one `data-open`). `ExpandableText` is retired from the PDP
+  (kept as a `components/ui` primitive).
+- **Global floating WhatsApp button** — `components/layout/whatsapp-button.tsx`,
+  mounted once in the root layout so it's on **every** page (verified: home/shop/
+  cart/login/track-order all carry the `wa.me/917014441952` link). Fixed
+  bottom-right FAB at `z-30` — below the sticky header (`z-40`) and the search /
+  mobile-filter overlays (`z-50`), so those cover it cleanly; the cart/utility
+  icons live in the top header, so no collision. Glyph uses the real WhatsApp
+  brand green (`#25D366`) via inline style — the documented third-party-brand
+  exception to the token rule; the button chrome stays on tokens.
+- **Video in the product gallery** — `Product` gained a `media: GalleryMedia[]`
+  field (each item `{ type: "image" | "video"; src; poster? }`), derived from
+  `images`. `ProductGallery` now renders a `<video controls>` for video items
+  (main viewer + mobile carousel) and an `<img>` otherwise; video thumbnails show
+  a **play-icon overlay** over the poster frame. Five mock products spread across
+  categories — `p_001` Lumen Drop (earrings), `p_009` Aurelia (necklaces),
+  `p_016` Serra Cuff (bangles), `p_021` Aurora Solitaire (rings), `p_033`
+  Étincelle (bracelets) — mix in a placeholder sample clip (w3schools BBB +
+  Google gtv-videos samples) at gallery position 2 (poster = first image, so the
+  card image stays an image), mapped via `VIDEO_BY_PRODUCT`. Verified the video
+  `src` appears on those PDPs and not on others.
+- **Add-on system (gift hampers etc.)** — `Product` gained `isAddOnOnly` and
+  `availableAddOnIds`. Three add-on-only products (`p_101` Gift Hamper, `p_102`
+  Premium Gift Box, `p_103` Scented Soy Candle), attached to a few mains
+  (`p_001`, `p_008`, `p_021`, `p_038`). New `shopProducts` (catalogue minus
+  add-ons) now backs the Shop grid, category pages, search box and header search;
+  `productsByCategory`/`relatedProducts`/`newArrivals`/`bestsellers` exclude them
+  too, and they're dropped from `generateStaticParams` (no standalone PDP).
+  `productBySlug` keeps the full set so `addOnsFor()` can resolve them. On the PDP
+  a compact "Make it a gift" toggle-card section sits just above Add-to-Cart;
+  ticking add-ons and clicking **Add to cart** adds the main variant **and** each
+  selected add-on as its own independent cart line in one action (reuses
+  `cart.add`; add-ons are single-SKU). A secondary "Add N gift extras" button
+  covers the case where the main item is already in the cart (stepper showing).
+  Verified add-ons appear on **no** browse surface (Shop/category HTML grep = 0)
+  and no add-on static pages are generated.
+
+**Verification:** `npm run build` clean (58 routes, 38 product pages — add-ons
+  excluded; TypeScript + ESLint ok). No raw hex/px in edited files (tokens only;
+  WhatsApp green is the noted brand exception in a named constant). SEO, video,
+  and add-on-exclusion all confirmed against the prerendered HTML.
+
+## Video playback refinements (PDP autoplay + scroll-into-view card video)
+
+Two refinements to the mixed-media gallery (still mock data, no backend):
+
+- **PDP gallery video — autoplay/loop/muted.** New `GalleryVideo` sub-component
+  in `product-gallery.tsx`: while a video is the **active** gallery item it
+  autoplays + loops, **muted** (required for browser autoplay policies; set on
+  the element via ref, not just the attribute, since React doesn't reliably
+  reflect `muted`). Native controls stay visible (volume/unmute, play/pause,
+  fullscreen). It pauses whenever it isn't the active item (so the mobile
+  carousel only plays the slide you're on). Replaced the old static
+  `<video controls preload="metadata">` in both the desktop main viewer and the
+  mobile carousel.
+- **Card video — scroll-into-view autoplay.** New reusable
+  `components/ui/card-video.tsx` (`CardVideo`): same IntersectionObserver pattern
+  as `Reveal`, but it gates **playback** instead of a one-shot reveal. A card's
+  video autoplays (muted, looped, no controls) only while in the viewport and
+  **pauses + fully unloads its `src`** (then `load()`s back to the poster) on
+  exit — so no more videos download/decode than are on screen. `preload="none"`
+  + no initial `src` means nothing downloads on page load; the file URL attaches
+  the first time the card enters view. Poster/first-frame is the fallback (no
+  blank flash). `prefers-reduced-motion` (or no IntersectionObserver) →
+  poster-only, source never attached.
+  - New `firstVideo(product)` helper in `lib/product.ts`. `ProductCard` gained an
+    optional `videoSrc` prop → renders `CardVideo` (poster = `imageSrc`) instead
+    of the `<img>`; wired from the **home** rails (`app/page.tsx`) and **related
+    products** (PDP). `ShopProductCard` (Shop grid + category pages) renders
+    `CardVideo` for video products and, to avoid two competing motions, **skips
+    the hover-to-cycle images** behaviour for those cards (`canCycle = !video &&
+    …`); video-less cards keep hover-cycling unchanged.
+
+**Verification:** `npm run build` clean (58 routes); ESLint clean. Headless
+  Chromium (Playwright) against the dev server confirmed: (1) Shop grid — the
+  in-viewport card plays muted+looped with `currentTime` advancing and only that
+  card fetched its `.mp4`; scrolling away **unloaded** (`src` removed) + paused
+  both off-screen videos. (2) PDP — clicking the video thumbnail autoplays
+  muted+looped, time advancing. (3) `prefers-reduced-motion` — no `src` attached,
+  nothing playing, **0** `.mp4` network requests (poster only). No raw hex/px in
+  edited files (tokens only).

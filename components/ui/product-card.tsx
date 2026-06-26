@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { CardVideo } from "@/components/ui/card-video";
 
 export interface ProductCardProps extends React.ComponentProps<"article"> {
   name: string;
@@ -12,6 +13,12 @@ export interface ProductCardProps extends React.ComponentProps<"article"> {
   originalPrice?: string;
   imageSrc?: string;
   imageAlt?: string;
+  /**
+   * When the product has a gallery video, its URL — the card then plays it
+   * (muted, looped, on scroll-into-view) instead of the still image, using
+   * `imageSrc` as the poster/fallback. See components/ui/card-video.tsx.
+   */
+  videoSrc?: string;
   /** Optional pill, e.g. "NEW" — rendered with the accent-soft badge. */
   tag?: string;
   /** When set, the whole card links here (e.g. /products/[slug]). */
@@ -38,6 +45,7 @@ function ProductCard({
   originalPrice,
   imageSrc = "/placeholder-product.svg",
   imageAlt,
+  videoSrc,
   tag,
   href,
   ...props
@@ -52,16 +60,26 @@ function ProductCard({
           </Badge>
         ) : null}
 
-        {/* Plain <img>: placeholder art for the design system. Real product
-            imagery + next/image handling arrives with the data layer. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={imageSrc}
-          alt={imageAlt ?? name}
-          width={600}
-          height={600}
-          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
-        />
+        {/* Video products play their clip (muted/looped, on scroll-into-view)
+            as the card's primary visual; the rest show the still image. Real
+            product imagery + next/image handling arrives with the data layer. */}
+        {videoSrc ? (
+          <CardVideo
+            src={videoSrc}
+            poster={imageSrc}
+            alt={imageAlt ?? name}
+            className="transition-transform duration-300 ease-out group-hover:scale-105"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageSrc}
+            alt={imageAlt ?? name}
+            width={600}
+            height={600}
+            className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+          />
+        )}
       </div>
 
       {/* Caption: name over price, left-aligned, no decoration. */}

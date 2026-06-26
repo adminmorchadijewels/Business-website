@@ -862,3 +862,107 @@ and alternatives considered.
   capped at 8 results); real catalogue search moves server-side with Supabase.
 - **Rationale:** an overlay works identically from any page (the header is global)
   and keeps users in context, vs. bouncing to a dedicated search route.
+
+---
+
+## 2026-06-26 — PDP description accordions, gift add-ons, gallery video, WhatsApp FAB
+
+### Description restructured into three accordions (REVERSES the earlier no-accordion choice)
+- **Decision:** the PDP description block is now three independent **shadcn
+  Accordion** sections — **Product Description** (narrative `longDescription`),
+  **Product Details** (`material` + new derived `dimensions` + `care`), and
+  **Return & Exchange** (placeholder policy) — replacing the single `ExpandableText`
+  ("See more / See less") block. Each panel uses Base UI's **`hiddenUntilFound`**
+  so the full text of all three sections stays in the rendered HTML even while
+  collapsed; "Product Description" is open by default.
+- **This reverses** the *"SEO-safe description truncation (CSS clamp…)"* decision
+  above (2026-06-24), which deliberately chose **"a single expand control, not an
+  accordion."** Reasoning for the reversal: **client preference for more
+  organised, scannable product information** — material/care/returns are distinct
+  concerns shoppers scan for individually, which a single run-on description
+  buries. The original decision's hard constraint (full copy in the initial HTML
+  for SEO) is **preserved** — `hiddenUntilFound` keeps every panel's content in
+  the DOM (verified against the prerendered `.html`), so the accordion hides
+  content from the initial *visual* view only, never from crawlers. `dimensions`
+  and `care` are PLACEHOLDER mock content (derived per-category / shared copy)
+  until real spec + final policy copy land. `ExpandableText` is retired from the
+  PDP but kept as a reusable `components/ui` primitive.
+
+### Add-on (gift) data model: catalogue flag + per-product reference list
+- **Decision:** model add-ons as ordinary `Product`s carrying two new fields —
+  `isAddOnOnly: boolean` (gift hamper / box / candle, etc.) and
+  `availableAddOnIds: string[]` on "main" products listing the add-ons they offer.
+  Rather than filter add-ons out at every call site, the catalogue exposes a
+  single derived **`shopProducts`** (all products minus `isAddOnOnly`) that backs
+  **every** browse surface — Shop grid, category pages, the Shop search box, and
+  the global header search — and `productsByCategory` / `relatedProducts` /
+  `newArrivals` / `bestsellers` are derived from it. Add-on-only products are also
+  dropped from the PDP's `generateStaticParams` (no standalone catalogue page).
+  The full `products` array is retained for `productBySlug` and the new
+  `addOnsFor(product)` resolver (which defensively keeps only ids that exist *and*
+  are flagged `isAddOnOnly`).
+- **Rationale:** add-ons are real purchasable line items (own price, own image,
+  own cart line), so they belong in the product model — not a bolted-on side
+  type — which keeps them ready for the Supabase move. Centralising the exclusion
+  in `shopProducts` makes "reachable only via the add-on selector" a single
+  invariant instead of a rule each page must remember. Add-ons are treated as
+  **single-SKU** (no variants/options) for now. On the PDP, ticking add-ons and
+  clicking **Add to cart** issues the main `cart.add` plus one `cart.add` per
+  selected add-on — each its own independent line (`lineKey` differs) — reusing
+  the existing cart mechanics with **no new cart concepts**.
+- **Alternatives considered:** (a) a separate `AddOn` type / separate mock list —
+  rejected: duplicates price/image/cart-line plumbing and a parallel data path to
+  migrate later; (b) filtering inline at each page — rejected: easy to forget a
+  surface (e.g. header search), which is exactly the leak the flag must prevent.
+
+### Gallery media: mixed image/video via a typed `media[]` (images[] kept)
+- **Decision:** added `media: GalleryMedia[]` to `Product` — each item is
+  `{ type: "image" | "video"; src; poster? }` — derived from the existing
+  `images` array (image-only, still used by cards and as the video poster). The
+  PDP gallery renders `<video controls>` for video items and `<img>` otherwise,
+  with a play-icon overlay on video thumbnails. A couple of mock products mix in
+  a placeholder clip; `imageSrc` (the card image) stays the first *image*.
+- **Rationale:** a typed media list is the shape a real backend would expose and
+  avoids overloading `images: string[]` with sentinel URLs; keeping `images`
+  intact means cards/search/fallbacks need no change. Video URL is a clearly
+  temporary public sample, swapped for R2 / Cloudflare Stream later.
+
+### Floating WhatsApp button: brand-green glyph as a documented token exception
+- **Decision:** a global fixed bottom-right FAB (root layout, every page) linking
+  to `wa.me/917014441952`, at `z-30` so it sits below the sticky header (`z-40`)
+  and the search / mobile-filter overlays (`z-50`). The glyph uses the real
+  WhatsApp brand green `#25D366` via inline style (named constant) — an explicit,
+  documented exception to the token-only colour rule, on the same basis as the
+  product swatch colours: it's a fixed third-party **brand mark**, not a themeable
+  Daylight site colour, so it must not change on a re-skin. The button's own
+  chrome (background, border, ring) stays on tokens.
+- **Rationale:** bottom-right is the conventional, expected placement; `z-30`
+  guarantees no collision with the existing fixed UI (header cart/utility icons
+  are top-anchored; overlays must cover the FAB, not the reverse). No scroll-to-
+  top button exists to conflict with.
+
+### Autoplaying product-card video: visual richness over raw page-load perf
+- **Decision (client-accepted trade-off):** product cards whose gallery has a
+  video play it **autoplaying** (muted, looped) as the card's primary visual on
+  the Shop grid, category pages and Home rows, triggered when the card scrolls
+  into the viewport. This is a deliberate choice of **visual richness over raw
+  page-load performance** — a grid of autoplaying video is heavier than one of
+  static images — and is **explicitly accepted by the client**.
+- **How the cost is bounded (so the trade-off stays reasonable):** the
+  `CardVideo` component (`components/ui/card-video.tsx`) keeps only the videos
+  *currently on screen* active — IntersectionObserver play/pause, and on exit it
+  **unloads the `src`** (resets to the poster), so off-screen cards stop
+  downloading/decoding. Sources are **lazy** (`preload="none"`, no `src` until
+  the card nears the viewport — nothing on initial load), the **poster** is the
+  fallback (no blank flash), and `prefers-reduced-motion` users get the **static
+  poster only** (the file is never fetched). So the cost scales with what's
+  visible, not with catalogue size.
+- **Conflict avoidance:** a card shows EITHER the autoplaying video OR the
+  existing hover-to-cycle images, never both — `ShopProductCard` disables
+  hover-cycling for video products so two motion behaviours never fight on one
+  card. The video is the motion; video-less cards keep hover-cycling.
+- **PDP gallery:** the main viewer autoplays the active video muted+looped (browser
+  autoplay needs muted) while keeping the volume/unmute, play/pause and fullscreen
+  controls, so a shopper can opt into sound. Distinct from the cards (which are
+  ambient — muted, looped, no controls). Placeholder sample clips swap for real product
+  video (R2 / Cloudflare Stream) later — unchanged from the prior gallery work.
